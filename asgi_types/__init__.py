@@ -29,49 +29,27 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import sys
-from typing import Awaitable, Callable, Dict, Iterable, Optional, Tuple, Type, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterable,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 if sys.version_info >= (3, 8):
     from typing import Literal, Protocol, TypedDict
 else:
     from typing_extensions import Literal, Protocol, TypedDict
 
-__all__ = (
-    "ASGIVersions",
-    "HTTPScope",
-    "WebSocketScope",
-    "LifespanScope",
-    "WWWScope",
-    "Scope",
-    "HTTPRequestEvent",
-    "HTTPResponseStartEvent",
-    "HTTPResponseBodyEvent",
-    "HTTPServerPushEvent",
-    "HTTPDisconnectEvent",
-    "WebSocketConnectEvent",
-    "WebSocketAcceptEvent",
-    "WebSocketReceiveEvent",
-    "WebSocketSendEvent",
-    "WebSocketResponseStartEvent",
-    "WebSocketResponseBodyEvent",
-    "WebSocketDisconnectEvent",
-    "WebSocketCloseEvent",
-    "LifespanStartupEvent",
-    "LifespanShutdownEvent",
-    "LifespanStartupCompleteEvent",
-    "LifespanStartupFailedEvent",
-    "LifespanShutdownCompleteEvent",
-    "LifespanShutdownFailedEvent",
-    "ASGIReceiveEvent",
-    "ASGISendEvent",
-    "ASGIReceiveCallable",
-    "ASGISendCallable",
-    "ASGI2Protocol",
-    "ASGI2Application",
-    "ASGI3Application",
-    "ASGIApplication",
-)
-
+if sys.version_info >= (3, 11):
+    from typing import NotRequired
+else:
+    from typing_extensions import NotRequired
 
 class ASGIVersions(TypedDict):
     spec_version: str
@@ -91,7 +69,8 @@ class HTTPScope(TypedDict):
     headers: Iterable[Tuple[bytes, bytes]]
     client: Optional[Tuple[str, int]]
     server: Optional[Tuple[str, Optional[int]]]
-    extensions: Optional[Dict[str, Dict[object, object]]]
+    state: NotRequired[Dict[str, Any]]
+    extensions: NotRequired[Dict[str, Dict[object, object]]]
 
 
 class WebSocketScope(TypedDict):
@@ -107,12 +86,14 @@ class WebSocketScope(TypedDict):
     client: Optional[Tuple[str, int]]
     server: Optional[Tuple[str, Optional[int]]]
     subprotocols: Iterable[str]
-    extensions: Optional[Dict[str, Dict[object, object]]]
+    state: NotRequired[Dict[str, Any]]
+    extensions: NotRequired[Dict[str, Dict[object, object]]]
 
 
 class LifespanScope(TypedDict):
     type: Literal["lifespan"]
     asgi: ASGIVersions
+    state: NotRequired[Dict[str, Any]]
 
 
 WWWScope = Union[HTTPScope, WebSocketScope]
@@ -122,19 +103,31 @@ Scope = Union[HTTPScope, WebSocketScope, LifespanScope]
 class HTTPRequestEvent(TypedDict):
     type: Literal["http.request"]
     body: bytes
-    more_body: bool
+    more_body: NotRequired[bool]
+
+
+class HTTPResponseDebugEvent(TypedDict):
+    type: Literal["http.response.debug"]
+    info: Dict[str, object]
 
 
 class HTTPResponseStartEvent(TypedDict):
     type: Literal["http.response.start"]
     status: int
-    headers: Iterable[Tuple[bytes, bytes]]
+    headers: NotRequired[Iterable[Tuple[bytes, bytes]]]
+    trailers: NotRequired[bool]
 
 
 class HTTPResponseBodyEvent(TypedDict):
     type: Literal["http.response.body"]
     body: bytes
-    more_body: bool
+    more_body: NotRequired[bool]
+
+
+class HTTPResponseTrailersEvent(TypedDict):
+    type: Literal["http.response.trailers"]
+    headers: Iterable[Tuple[bytes, bytes]]
+    more_trailers: NotRequired[bool]
 
 
 class HTTPServerPushEvent(TypedDict):
@@ -153,20 +146,38 @@ class WebSocketConnectEvent(TypedDict):
 
 class WebSocketAcceptEvent(TypedDict):
     type: Literal["websocket.accept"]
-    subprotocol: Optional[str]
-    headers: Iterable[Tuple[bytes, bytes]]
+    subprotocol: NotRequired[Optional[str]]
+    headers: NotRequired[Iterable[Tuple[bytes, bytes]]]
 
 
-class WebSocketReceiveEvent(TypedDict):
+class _WebSocketReceiveEventBytes(TypedDict):
     type: Literal["websocket.receive"]
-    bytes: Optional[bytes]
-    text: Optional[str]
+    bytes: bytes
+    text: NotRequired[None]
 
 
-class WebSocketSendEvent(TypedDict):
+class _WebSocketReceiveEventText(TypedDict):
+    type: Literal["websocket.receive"]
+    bytes: NotRequired[None]
+    text: str
+
+
+WebSocketReceiveEvent = Union[_WebSocketReceiveEventBytes, _WebSocketReceiveEventText]
+
+
+class _WebSocketSendEventBytes(TypedDict):
     type: Literal["websocket.send"]
-    bytes: Optional[bytes]
-    text: Optional[str]
+    bytes: bytes
+    text: NotRequired[None]
+
+
+class _WebSocketSendEventText(TypedDict):
+    type: Literal["websocket.send"]
+    bytes: NotRequired[None]
+    text: str
+
+
+WebSocketSendEvent = Union[_WebSocketSendEventBytes, _WebSocketSendEventText]
 
 
 class WebSocketResponseStartEvent(TypedDict):
@@ -178,7 +189,7 @@ class WebSocketResponseStartEvent(TypedDict):
 class WebSocketResponseBodyEvent(TypedDict):
     type: Literal["websocket.http.response.body"]
     body: bytes
-    more_body: bool
+    more_body: NotRequired[bool]
 
 
 class WebSocketDisconnectEvent(TypedDict):
@@ -188,8 +199,8 @@ class WebSocketDisconnectEvent(TypedDict):
 
 class WebSocketCloseEvent(TypedDict):
     type: Literal["websocket.close"]
-    code: int
-    reason: Optional[str]
+    code: NotRequired[int]
+    reason: NotRequired[Optional[str]]
 
 
 class LifespanStartupEvent(TypedDict):
@@ -218,6 +229,11 @@ class LifespanShutdownFailedEvent(TypedDict):
     message: str
 
 
+WebSocketEvent = Union[
+    WebSocketReceiveEvent, WebSocketDisconnectEvent, WebSocketConnectEvent
+]
+
+
 ASGIReceiveEvent = Union[
     HTTPRequestEvent,
     HTTPDisconnectEvent,
@@ -232,6 +248,7 @@ ASGIReceiveEvent = Union[
 ASGISendEvent = Union[
     HTTPResponseStartEvent,
     HTTPResponseBodyEvent,
+    HTTPResponseTrailersEvent,
     HTTPServerPushEvent,
     HTTPDisconnectEvent,
     WebSocketAcceptEvent,
