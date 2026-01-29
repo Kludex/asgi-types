@@ -35,7 +35,7 @@ from collections.abc import Awaitable, Callable, Iterable
 from typing import Any, Literal, Protocol, TypedDict
 
 if sys.version_info >= (3, 11):
-    from typing import NotRequired
+    from typing import NotRequired  # pragma: no cover
 else:
     from typing_extensions import NotRequired  # pragma: no cover
 
