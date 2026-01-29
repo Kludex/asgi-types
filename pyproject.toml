@@ -1,22 +1,87 @@
 [build-system]
-requires = ["setuptools >= 40.6.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.mypy]
-check_untyped_defs = true
-disallow_any_generics = true
-disallow_incomplete_defs = true
-disallow_untyped_defs = true
-no_implicit_optional = true
-show_error_codes = true
-warn_unreachable = true
-warn_unused_ignores = true
+[project]
+name = "asgi-types"
+dynamic = ["version"]
+description = "More accurate ASGI types according to my understanding"
+readme = "README.md"
+license = "BSD-3-Clause"
+license-files = ["LICENSE.md"]
+requires-python = ">=3.10"
+authors = [
+    { name = "Marcelo Trylesinski", email = "marcelotryle@gmail.com" }
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Internet :: WWW/HTTP",
+]
+dependencies = [
+    "typing-extensions>=4.0.0; python_version < '3.11'",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.9",
+    "pytest>=8.3.5",
+    "pyright",
+    "coverage>=7.8.0",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+required-version = ">=0.8.6"
+
+[project.urls]
+Homepage = "https://github.com/Kludex/asgi-types"
+Source = "https://github.com/Kludex/asgi-types"
+Funding = "https://github.com/sponsors/Kludex"
+
+[tool.hatch.version]
+path = "asgi_types/__init__.py"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "FA", "UP"]
+ignore = ["B904", "B028", "UP031"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.pyright]
+typeCheckingMode = "strict"
 
 [tool.pytest.ini_options]
-addopts = """\
-    --strict-config
-    --strict-markers
-    """
-filterwarnings = """\
-    error
-    """
+addopts = "-rxXs --strict-config --strict-markers"
+xfail_strict = true
+filterwarnings = [
+    "error"
+]
+
+[tool.coverage.run]
+branch = true
+source_pkgs = ["asgi_types", "tests"]
+
+[tool.coverage.report]
+precision = 2
+fail_under = 100
+show_missing = true
+skip_covered = true
+exclude_also = [
+    "@overload",
+    "raise NotImplementedError",
+]

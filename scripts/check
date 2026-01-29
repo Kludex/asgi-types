@@ -1,0 +1,10 @@
+#!/bin/sh -e
+
+set -x
+
+SOURCE_FILES="asgi_types tests"
+
+uv run ruff format --check --diff $SOURCE_FILES
+uv run ruff check $SOURCE_FILES
+uv run pyright $SOURCE_FILES
+uv lock
